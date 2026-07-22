@@ -1,0 +1,6 @@
+@BusTicketSimulation.WebAPI_HostAddress = http://localhost:5285
+
+GET {{BusTicketSimulation.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

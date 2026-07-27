@@ -16,6 +16,7 @@ public class AppDbContext : DbContext   //EF core'un ana yönetim sınıfından 
     public DbSet<Bus> Buses { get; set; }
     public DbSet<Trip> Trips { get; set; }
     public DbSet<SoldSeat> SoldSeats { get; set; }
+    public DbSet<User> Users { get; set; } 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)   //EF core'un veritabanına bağlanırken çalıştırdığı hazır metot
     {

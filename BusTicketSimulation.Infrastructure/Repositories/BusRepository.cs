@@ -12,36 +12,36 @@ namespace BusTicketSimulation.Infrastructure.Repositories
 {
     public class BusRepository : IBusRepository
     {
-        private readonly AppDbContext dbContext;
+        private readonly AppDbContext _context;
 
         //Dependency Injection (Bağımlılık Enjeksiyonu) ile AppDbContext nesnesini alıyoruz
         public BusRepository(AppDbContext context)
         {
-            dbContext = context;
+            _context = context;
         }
         public async Task<Bus?> GetByIdAsync(Guid id)
         {
-            return await dbContext.Buses.FindAsync(id);
+            return await _context.Buses.FindAsync(id);
         }
         public async Task<IEnumerable<Bus>> GetAllAsync()
         {
-            return await dbContext.Buses.ToListAsync();
+            return await _context.Buses.ToListAsync();
         }
         public async Task AddAsync(Bus bus)
         {
-            await dbContext.Buses.AddAsync(bus);
+            await _context.Buses.AddAsync(bus);
         }
         public void Delete(Bus bus)
         {
-            dbContext.Buses.Remove(bus);
+            _context.Buses.Remove(bus);
         }
         public void Update(Bus bus)
         {
-            dbContext.Buses.Update(bus);
+            _context.Buses.Update(bus);
         }
         public async Task<bool> SaveChangesAsync()
         {
-            return await dbContext.SaveChangesAsync() > 0;
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

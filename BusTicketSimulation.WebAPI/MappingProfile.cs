@@ -23,11 +23,19 @@ namespace BusTicketSimulation.WebAPI
                 .ForMember(destination => destination.SeatCount,
                     options => options.MapFrom(source => source.Bus != null ? source.Bus.SeatCount : 40))  //Varasyılan 40
                 .ForMember(destination => destination.BusType,
-                    options => options.MapFrom(soruce => soruce.Bus != null ? soruce.Bus.BusType : "2+2"))  //Varsayılan 2+2
+                    options => options.MapFrom(source => source.Bus != null ? source.Bus.BusType : "2+2"))  //Varsayılan 2+2
                 .ForMember(destination => destination.SoldSeats, 
                     options => options.MapFrom(source => source.SoldSeats));    //Koltukların kaybolmasını engelleyen güvenli eşleme satırı
 
             CreateMap<SoldSeat, SoldSeatResponseDto>().ReverseMap();
+
+            CreateMap<SoldSeat, UserTicketResponseDto>()
+                .ForMember(destination => destination.TicketId, options => options.MapFrom(source => source.Id))
+                .ForMember(destination => destination.From, options => options.MapFrom(source => source.Trip.From))
+                .ForMember(destination => destination.To, options => options.MapFrom(source => source.Trip.To))
+                .ForMember(destination => destination.DepartureTime, options => options.MapFrom(source => source.Trip.DepartureTime))
+                .ForMember(destination => destination.Price, options => options.MapFrom(source => source.Trip.Price))
+                .ForMember(destination => destination.BusPlateNumber, options => options.MapFrom(source => source.Trip.Bus.PlateNumber));
         }
     }
 }

@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using BusTicketSimulation.Core.DTOs;
 using BusTicketSimulation.Core.Entities;
 using BusTicketSimulation.Core.Interfaces;
-using BusTicketSimulation.Core.DTOs;
-using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata;
+using System;
+using System.Security.Claims;
 
 namespace BusTicketSimulation.WebAPI.Controllers
 {
@@ -11,20 +15,21 @@ namespace BusTicketSimulation.WebAPI.Controllers
     [ApiController]
     public class TripController : ControllerBase    
     {
-        private readonly ITripRepository tripRepository;
-        private readonly IMapper mapper;
+        private readonly ITripRepository _tripRepository;
+        private readonly IMapper _mapper;
 
-        public TripController(ITripRepository tRepository, IMapper htmlMapper)
+        public TripController(ITripRepository tripRepository, IMapper htmlMapper)
         {
-            tripRepository = tRepository;
-            mapper = htmlMapper;
+            _tripRepository = tripRepository;
+            _mapper = htmlMapper;
         }
 
         [HttpGet]
+        [AllowAnonymous]    //Sefer listesini çekmek için Token zorunlu olmasın!
         public async Task<IActionResult> GetAll()
         {
-            var trips = await tripRepository.GetAllAsync();
-            var result = mapper.Map<IEnumerable<TripResultDto>>(trips); //Ham veritabanı modellerini Vue tarafının anlayacağı TripResultDto listesine dönüştürüyoruz
+            var trips = await _tripRepository.GetAllAsync();
+            var result = _mapper.Map<IEnumerable<TripResultDto>>(trips); //Ham veritabanı modellerini Vue tarafının anlayacağı TripResultDto listesine dönüştürüyoruz
             return Ok(result);   //Http 200
         }
 
@@ -34,26 +39,36 @@ namespace BusTicketSimulation.WebAPI.Controllers
             if (string.IsNullOrEmpty(from) || string.IsNullOrEmpty(to))
                 return BadRequest("Kalkış ve varış yerleri boş bırakılamaz❗");   //Http 400 hatası döner
 
-            var trips = await tripRepository.GetTripsByRouteAsync(from, to);
-            var result = mapper.Map<IEnumerable<TripResultDto>>(trips);
+            var trips = await _tripRepository.GetTripsByRouteAsync(from, to);
+            var result = _mapper.Map<IEnumerable<TripResultDto>>(trips);
             return Ok(result);
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] TripCreateDto dto)
         {
-            var trip = mapper.Map<Trip>(dto);
-            await tripRepository.AddAsync(trip);
-            await tripRepository.SaveChangesAsync();
+            var trip = _mapper.Map<Trip>(dto);
+            await _tripRepository.AddAsync(trip);
+            await _tripRepository.SaveChangesAsync();
 
             return Ok("Sefer başarıyla oluşturuldu ✅");   // Http 200
         }
 
         //Toplu bilet alma
         [HttpPost("buy-tickets-bulk")]
+        [Authorize]     //Token doğrulaması yapar
         public async Task<IActionResult> BuyTicketsBulk([FromBody] BulkTicketDto dto)
         {
-            var trip = await tripRepository.GetByIdAsync(dto.TripId);
+            //JWT Token içinden giriş yapan kullanıcının ID'sini okuyoruz
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                return Unauthorized("Token içinde kullanıcı kimliği bulunamadı❗");
+            }
+
+            Guid currnetUserId = Guid.Parse(userIdClaim);
+
+            var trip = await _tripRepository.GetByIdAsync(dto.TripId);
             if (trip == null) return NotFound("Sefer bulunamadı❗");
 
             //Sadece önceden veritabanına kaydedilmiş (kesin satılmış) koltukları çekiyoruz
@@ -120,12 +135,13 @@ namespace BusTicketSimulation.WebAPI.Controllers
                 {
                     TripId = dto.TripId,
                     SeatNumber = ticketDto.SeatNumber,
-                    Gender = ticketDto.Gender
+                    Gender = ticketDto.Gender,
+                    UserId = currnetUserId
                 };
-                await tripRepository.AddSoldSeatAsync(newSoldSeat);
+                await _tripRepository.AddSoldSeatAsync(newSoldSeat);
             }
 
-            await tripRepository.SaveChangesAsync();
+            await _tripRepository.SaveChangesAsync();
             return Ok(new { Message = "Seçtiğiniz tüm biletler başarıyla onaylandı ve satın alındı. 🎫", NewSeats = dto.Tickets });
         }
     }

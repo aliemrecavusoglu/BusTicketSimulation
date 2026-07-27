@@ -12,28 +12,28 @@ namespace BusTicketSimulation.WebAPI.Controllers
     [ApiController] 
     public class BusController : ControllerBase     
     {
-        private readonly IBusRepository busRepository;
-        private readonly IMapper mapper;
+        private readonly IBusRepository _busRepository;
+        private readonly IMapper _mapper;
 
         //Dependency Injection(Bağımlılık Enjeksiyonu): Veritabanı arayüzünü ve AutoMapper kütüphanesini sisteme dahil ediyoruz
-        public BusController(IBusRepository bRepository, IMapper htmlMapper)
+        public BusController(IBusRepository busRepository, IMapper mapper)
         {
-            busRepository = bRepository;
-            mapper = htmlMapper;
+            _busRepository = busRepository;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public async Task<IActionResult>GetAll()
         {
 
-            var buses = await busRepository.GetAllAsync();
+            var buses = await _busRepository.GetAllAsync();
             return Ok(buses);   //Http 200 (yani başarılı) döner
         }
         
         [HttpGet("{id}")]
         public async Task<IActionResult>GetById(Guid id)
         {
-            var bus = await busRepository.GetByIdAsync(id);
+            var bus = await _busRepository.GetByIdAsync(id);
             if (bus == null)
             {
                 throw new NotFoundException($"{id} kimlik numaralı otobüs sistemde mevcut değil ❌");    //Http 404 hatası döner
@@ -44,10 +44,10 @@ namespace BusTicketSimulation.WebAPI.Controllers
         [HttpPost]
         public async Task<IActionResult>Create(BusCreateDto dto)
         {
-            var bus = mapper.Map<Bus>(dto);
+            var bus = _mapper.Map<Bus>(dto);
 
-            await busRepository.AddAsync(bus);
-            await busRepository.SaveChangesAsync();
+            await _busRepository.AddAsync(bus);
+            await _busRepository.SaveChangesAsync();
             return Ok("Otobüs başarıyla eklendi ✅");     //Http 200 (yani başarılı) döner
         }
     }

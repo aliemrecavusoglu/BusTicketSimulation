@@ -47,6 +47,7 @@ namespace BusTicketSimulation.WebAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] TripCreateDto dto)
         {
             var trip = _mapper.Map<Trip>(dto);
@@ -157,7 +158,7 @@ namespace BusTicketSimulation.WebAPI.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize] //Sadece admin rolüne sahip kullanıcılar güncelleme yapabilir
+        [Authorize(Roles = "Admin")] //Sadece admin rolüne sahip kullanıcılar güncelleme yapabilir
         public async Task<IActionResult> Update(Guid id, [FromBody] TripUpdateDto dto)
         {
             if (id != dto.Id)
@@ -177,7 +178,7 @@ namespace BusTicketSimulation.WebAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var trip = await _tripRepository.GetByIdAsync(id);

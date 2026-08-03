@@ -3,6 +3,7 @@ using BusTicketSimulation.Core.DTOs;
 using BusTicketSimulation.Core.Entities;
 using BusTicketSimulation.Core.Interfaces;
 using BusTicketSimulation.WebAPI.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,6 +24,7 @@ namespace BusTicketSimulation.WebAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult>GetAll()
         {
             var buses = await _busRepository.GetAllAsync();
@@ -30,6 +32,7 @@ namespace BusTicketSimulation.WebAPI.Controllers
         }
         
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult>GetById(Guid id)
         {
             var bus = await _busRepository.GetByIdAsync(id);
@@ -41,6 +44,7 @@ namespace BusTicketSimulation.WebAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult>Create(BusCreateDto dto)
         {
             var bus = _mapper.Map<Bus>(dto);

@@ -15,6 +15,8 @@ namespace BusTicketSimulation.WebAPI
             //Swagger'dan gelen temiz TripCreateDto bilgisini veritabanındaki Trip entity'sine eşler
             CreateMap<TripCreateDto, Trip>();
 
+            CreateMap<TripUpdateDto, Trip>();
+
             //Trip nesnesinden TripResultDto nesnesine dönüşüm
             //Veritabanından çekilen bilgileri dış dünyaya gösterir
             CreateMap<Trip, TripResultDto>()

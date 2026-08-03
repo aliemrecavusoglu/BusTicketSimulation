@@ -13,7 +13,7 @@ namespace BusTicketSimulation.WebAPI.Controllers
 {
     [Route("api/[controller]")]     //kontrolcüye erişilecek internet adresi
     [ApiController]
-    public class TripController : ControllerBase    
+    public class TripController : ControllerBase
     {
         private readonly ITripRepository _tripRepository;
         private readonly IMapper _mapper;
@@ -25,11 +25,12 @@ namespace BusTicketSimulation.WebAPI.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]    //Sefer listesini çekmek için Token zorunlu olmasın!
+        [AllowAnonymous]    //Sefer listesini çekmek için token zorunlu olmasın
         public async Task<IActionResult> GetAll()
         {
             var trips = await _tripRepository.GetAllAsync();
-            var result = _mapper.Map<IEnumerable<TripResultDto>>(trips); //Ham veritabanı modellerini Vue tarafının anlayacağı TripResultDto listesine dönüştürüyoruz
+            var activeTrips = trips.Where(t => t.DepartureTime >= DateTime.Now).ToList();   //Sadece kalkış zamanı henüz gelmemiş seferleri listele
+            var result = _mapper.Map<IEnumerable<TripResultDto>>(activeTrips); //Ham veritabanı modellerini Vue tarafının anlayacağı TripResultDto listesine dönüştürüyoruz
             return Ok(result);   //Http 200
         }
 
@@ -40,7 +41,8 @@ namespace BusTicketSimulation.WebAPI.Controllers
                 return BadRequest("Kalkış ve varış yerleri boş bırakılamaz❗");   //Http 400 hatası döner
 
             var trips = await _tripRepository.GetTripsByRouteAsync(from, to);
-            var result = _mapper.Map<IEnumerable<TripResultDto>>(trips);
+            var activeTrips = trips.Where(t => t.DepartureTime >= DateTime.Now).ToList();   //Sadece kalkış zamanı henüz gelmemiş seferleri listele
+            var result = _mapper.Map<IEnumerable<TripResultDto>>(activeTrips);
             return Ok(result);
         }
 
@@ -101,9 +103,9 @@ namespace BusTicketSimulation.WebAPI.Controllers
                 {
                     neighborSeatNumber = (ticketDto.SeatNumber % 2 == 1) ? ticketDto.SeatNumber + 1 : ticketDto.SeatNumber - 1;
                 }
-                else if(busType == "2+1")
+                else if (busType == "2+1")
                 {
-                    if(ticketDto.SeatNumber % 3 == 1)
+                    if (ticketDto.SeatNumber % 3 == 1)
                     {
                         neighborSeatNumber = 0;
                     }
@@ -114,21 +116,25 @@ namespace BusTicketSimulation.WebAPI.Controllers
                 }
 
                 //Eğer geçerli bir yan koltuk numarası belirlendiyse
-                if(neighborSeatNumber > 0)
+                if (neighborSeatNumber > 0)
                 {
-                    //Yan koltuğu SADECE veritabanındaki (önceden alınmış) koltuklar arasında arıyoruz!
+                    //Yan koltuğu sadece veritabanındaki (önceden alınmış) koltuklar arasında arıyoruz
                     //Aynı sepette gelen diğer biletleri bu filtreye dahil etmiyoruz
                     var dbNeighborSeat = dbSoldSeats.FirstOrDefault(s => s.SeatNumber == neighborSeatNumber);
 
-                    // Eğer yan koltuk önceden veritabanına kaydedilmişse VE cinsiyeti şu an alınandan farklıysa:
+                    //Eğer yan koltuk önceden veritabanına kaydedilmişse ve cinsiyeti şu an alınandan farklıysa
                     if (dbNeighborSeat != null && dbNeighborSeat.Gender != ticketDto.Gender)
                     {
                         return BadRequest($"{neighborSeatNumber} numaralı koltuk daha önce farklı bir cinsiyet ({dbNeighborSeat.Gender}) tarafından satın alındığı için, yanındaki {ticketDto.SeatNumber} numaralı koltuğu bu cinsiyetle satın alamazsınız❗");
                     }
-                }    
+                }
             }
 
-            // Eğer tüm sepetteki biletler yukarıdaki "önceden alınmış yabancı koltuk" testinden geçtiyse, veritabanına kaydet:
+            //PNR kodunu backend'de üretiyoruz 
+            //Guid.NewGuid() kullanarak tamamen benzersiz bir şifre üretiyor ve ilk 5 hanesini alıyoruz
+            string generatedPnr = "TR-" + Guid.NewGuid().ToString().Substring(0, 5).ToUpper(); 
+
+            //Eğer tüm sepetteki biletler yukarıdaki "önceden alınmış yabancı koltuk" testinden geçtiyse, veritabanına kaydet:
             foreach (var ticketDto in dto.Tickets)
             {
                 var newSoldSeat = new SoldSeat
@@ -136,13 +142,56 @@ namespace BusTicketSimulation.WebAPI.Controllers
                     TripId = dto.TripId,
                     SeatNumber = ticketDto.SeatNumber,
                     Gender = ticketDto.Gender,
-                    UserId = currnetUserId
+                    UserId = currnetUserId,
+                    FirstName = ticketDto.FirstName,
+                    LastName = ticketDto.LastName,
+                    TcIdentity = ticketDto.TcIdentity,
+                    Phone = ticketDto.Phone,
+                    PnrNumber = generatedPnr
                 };
                 await _tripRepository.AddSoldSeatAsync(newSoldSeat);
             }
 
             await _tripRepository.SaveChangesAsync();
             return Ok(new { Message = "Seçtiğiniz tüm biletler başarıyla onaylandı ve satın alındı. 🎫", NewSeats = dto.Tickets });
+        }
+
+        [HttpPut("{id}")]
+        [Authorize] //Sadece admin rolüne sahip kullanıcılar güncelleme yapabilir
+        public async Task<IActionResult> Update(Guid id, [FromBody] TripUpdateDto dto)
+        {
+            if (id != dto.Id)
+            {
+                return BadRequest("URL'deki ID ile gönderilen ID bilgisi uyuşmuyor❗");
+            }
+
+            var trip = await _tripRepository.GetByIdAsync(id);
+            if (trip == null) return NotFound("Sefer bulunamadı❗");
+
+            _mapper.Map(dto, trip);
+
+            _tripRepository.Update(trip);
+            await _tripRepository.SaveChangesAsync();
+
+            return Ok("Sefer başarıyla güncellendi ✅");
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var trip = await _tripRepository.GetByIdAsync(id);
+            if (trip == null) return NotFound("Sefer bulunamadı❗");
+
+            if (trip.SoldSeats != null && trip.SoldSeats.Any())
+            {
+                return BadRequest("Bu sefere ait satılmış biletler bulunmaktadır, doğrudan silinemez❗");
+            }
+
+            _tripRepository.Delete(trip);
+            await _tripRepository.SaveChangesAsync();
+
+            return Ok("Sefer başarıyla silindi ✅");
         }
     }
 }

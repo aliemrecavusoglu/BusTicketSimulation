@@ -49,7 +49,7 @@ public class TripRepository : ITripRepository
     }
     public async Task AddSoldSeatAsync(BusTicketSimulation.Core.Entities.SoldSeat soldSeat)
     {
-        // Doğrudan DbContext üzerinden SoldSeats tablosuna bağımsız INSERT atıyoruz
+        //Doğrudan DbContext üzerinden SoldSeats tablosuna bağımsız INSERT atıyoruz
         await _context.Set<BusTicketSimulation.Core.Entities.SoldSeat>().AddAsync(soldSeat);
     }
     public async Task<bool> SaveChangesAsync()

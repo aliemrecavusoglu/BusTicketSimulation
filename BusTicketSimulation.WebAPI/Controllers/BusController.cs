@@ -25,7 +25,6 @@ namespace BusTicketSimulation.WebAPI.Controllers
         [HttpGet]
         public async Task<IActionResult>GetAll()
         {
-
             var buses = await _busRepository.GetAllAsync();
             return Ok(buses);   //Http 200 (yani başarılı) döner
         }

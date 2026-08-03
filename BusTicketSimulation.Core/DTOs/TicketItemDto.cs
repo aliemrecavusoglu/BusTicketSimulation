@@ -9,6 +9,10 @@ namespace BusTicketSimulation.Core.DTOs
     public class TicketItemDto
     {
         public int SeatNumber { get; set; }
-        public string Gender { get; set; } = string.Empty; 
+        public string Gender { get; set; } = string.Empty;
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string TcIdentity { get; set; }
+        public string? Phone { get; set; } 
     }
 }

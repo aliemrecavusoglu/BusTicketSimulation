@@ -27,13 +27,13 @@ namespace BusTicketSimulation.Infrastructure.Repositories
             _configuration = configuration;
         }
 
-        //1. E-posta adresi veritabanında daha önce var mı kontrol eder
+        //E-posta adresi veritabanında daha önce var mı kontrol eder
         public async Task<bool> UserExistsAsync(string email)
         {
             return await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower());
         }
 
-        //2. Yeni Kullanıcı Kaydı (Register)
+        //Yeni Kullanıcı Kaydı (Register)
         public async Task<User> RegisterAsync(UserRegisterDto dto)
         {
             CreatePasswordHash(dto.Password, out byte[] passwordHash, out byte[] passwordSalt);
@@ -45,7 +45,7 @@ namespace BusTicketSimulation.Infrastructure.Repositories
                 Email = dto.Email,
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
-                Role = "User" // Varsayılan olarak "User" rolü atanır
+                Role = UserRole.User, // Varsayılan olarak User rolü atanır
             };
 
             await _context.Users.AddAsync(user);
@@ -54,7 +54,7 @@ namespace BusTicketSimulation.Infrastructure.Repositories
             return user;
         }
 
-        //3. Kullanıcı Girişi (Login) -> Şifre doğruysa JWT Token döner
+        //Kullanıcı Girişi (Login) -> Şifre doğruysa JWT Token döner
         public async Task<string?> LoginAsync(UserLoginDto dto)
         {
             // Veritabanından kullanıcıyı buluyoruz
@@ -97,7 +97,7 @@ namespace BusTicketSimulation.Infrastructure.Repositories
                 new Claim(ClaimTypes.GivenName, user.FirstName),
                 new Claim(ClaimTypes.Surname, user.LastName),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role.ToString())
             };
             var secretKey = _configuration["Jwt:SecretKey"] ?? "BusTicketSimulationSankiKriptoluBirBankaAnahtariGibiCokGizliCokUzunSifre1234567890!";
             var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

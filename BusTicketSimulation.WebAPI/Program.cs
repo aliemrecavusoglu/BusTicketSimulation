@@ -24,8 +24,8 @@ var secretKey = builder.Configuration["Jwt:SecretKey"] ?? "BusTicketSimulationSa
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = (string?)JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = (string?)JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {

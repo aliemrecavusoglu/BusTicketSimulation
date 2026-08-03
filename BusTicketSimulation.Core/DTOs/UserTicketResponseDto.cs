@@ -16,5 +16,8 @@ namespace BusTicketSimulation.Core.DTOs
         public DateTime DepartureTime { get; set; }
         public decimal Price { get; set; }
         public string BusPlateNumber { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string PnrNumber { get; set; } = string.Empty;   
     }
 }

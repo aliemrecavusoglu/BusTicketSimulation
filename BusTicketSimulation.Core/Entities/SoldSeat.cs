@@ -11,7 +11,12 @@ namespace BusTicketSimulation.Core.Entities
     {
         public int SeatNumber { get; set; }
         public string Gender { get; set; }
-        
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string TcIdentity { get; set; }
+        public string? Phone { get; set; } // Nullable (Çünkü sadece 1. yolcuda var)
+        public string PnrNumber { get; set; }
+
         // İlişki (Foreign Key): Bu koltuk hangi sefere ait?
         public Guid TripId { get; set; }
 
